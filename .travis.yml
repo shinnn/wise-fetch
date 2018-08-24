@@ -1,0 +1,10 @@
+branches:
+  except: /^v\d/
+language: node_js
+node_js: node
+before_install: npm install --global npm
+after_script: node_modules/.bin/nyc report | npx coveralls
+env:
+  global:
+    - COVERALLS_SERVICE_NAME=travis-pro
+    - secure: ZrvQ+7vHG27whuQdaykPsn9S97C7N1Wynq4V68sryVBsSuGHhFTNC6Qb9XMjKpyHjUGqrZhp1F/rdx97494ioUEcZX8Zc0vUEVdoccL3tvvgOOML2bGSUeFXGeassbrjPuiJ6rrieg6tXK81QWuOUXE4tAty0duvAVwMKtevpWcZGEe5c3qJpmmJGGjce8CFjtHpFCB24nXAQykt6NgD9cR19+NuvSno/zTM7pkxsN9i26dHm3MOcA1c4mREV/F/ockfNCH6+O3XqFJyZtgJngMlm7HwDR0praawq8ry1e/T/D4f3cLVmt7tAq6Y3ZROEwET6aQ+ZA0RbcFxXWnXMKVVD9I3in8mEp/LMqNTS2iMZmrYHxKp9OKpQC9IOG5YqN3U02N7PA5KTnQOjtCxWU/JV9EERNi2N5JVpodgCz/zCSIpaQ/fjTHQCnfKyR2HWLmlkmsrVclHsgzbK8hCYZ66nFCajR0rQ/YBXVVWf3xtdHv3NpWuw90tpVZyF3hoC26Nft1eWw72u2meeDqdv+jjzjxf27PUVwKnbEF5Rl/jDPeevjnCOwahW9TjTKTg00TifVVPMrXHPu5uWdtFE7zudhOYQbPGbIiguOaB37R0Xl/6IU8ASJ/WfJFe15+w+2vX+oSOqtBRTNKjb3wkaowJ8y3BU8nC+qzIOSKTmqk=
