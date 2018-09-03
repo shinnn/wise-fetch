@@ -8,6 +8,7 @@ Feature-rich [node-fetch](https://github.com/bitinn/node-fetch):
 
 * Built-in [RFC compliant response cache](https://tools.ietf.org/html/rfc7234)
 * Proxy support
+* [Abortable](#optionssignal)
 * [Base URL](#optionsbaseurl) support
 * Automatic `Promise` rejection of unsuccessful responses by default
 * Strict URL validation
@@ -103,6 +104,30 @@ Return a resolved `Promise` even if the response is unsuccessful.
 
   response.statusText; //=> 'Not Found'
 })();
+```
+
+##### options.signal
+
+Type: [`AbortSignal`](https://developer.mozilla.org/docs/Web/API/AbortSignal)
+
+Allow a user to abort the request via the corresponding [`AbortController`](https://developer.mozilla.org/docs/Web/API/AbortController/AbortController). Read [the article about abortable fetch](https://developers.google.com/web/updates/2017/09/abortable-fetch) for more details.
+
+Currently Node.js doesn't support [`AbortController`](https://developer.mozilla.org/docs/Web/API/AbortController), so that users need to use [the userland implementation](https://github.com/mysticatea/abort-controller) instead.
+
+```javascript
+const AbortController = require('abort-controller');
+
+const abortController = new AbortController();
+
+(async () => {
+  try {
+    await wiseFetch('https://loclahost:5000/very_large_contents', {signal: abortController.signal});
+  } catch (err) {
+    err.message; //=> '... The GET request to https://loclahost:5000/very_large_contents was aborted'
+  }
+})();
+
+setTimeout(() => abortController.abort(), 1000);
 ```
 
 ##### options.userAgent
@@ -216,6 +241,26 @@ forceYourUA('https://example.org', {
   userAgent: 'nothing'
 });
 // rejected with an Error: 'user agent must include your name!'
+```
+
+### wiseFetch.ABORT_ERROR_CODE
+
+Type: `integer`
+
+An error [`code`](https://nodejs.org/api/errors.html#errors_error_code) that wiseFetch adds to the error when the request is [aborted](#optionssignal).
+
+```javascript
+(async () => {
+  try {
+    await wiseFetch('https://example.org/', {signal: someSignal});
+  } catch (err) {
+    if (err.code === wiseFetch.ABORT_ERROR_CODE) {
+      console.log('Canceled');
+    } else {
+      throw err;
+    }
+  }
+})();
 ```
 
 ### wiseFetch.CACHE_DIR

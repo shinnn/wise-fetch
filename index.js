@@ -14,6 +14,7 @@ const loadFromCwdOrNpm = require('load-from-cwd-or-npm');
 const lowercaseKeys = require('lowercase-keys');
 const rejectUnsatisfiedNpmVersion = require('reject-unsatisfied-npm-version');
 
+const ABORT_ERROR_CODE = 20;
 const CACHE_DIR = join(tmpdir(), 'wise-fetch');
 const CREATE_METHOD_SPECIFIC_OPTIONS = new Set(['additionalOptionValidators', 'frozenOptions', 'urlModifier']);
 const CACHE_OPTIONS = new Set(['default', 'force-cache', 'no-cache', 'no-store', 'only-if-cached']);
@@ -50,6 +51,15 @@ const TIMEOUT_ERROR = 'Expected `timeout` option to be a positive safe integer o
 const SIZE_ERROR = 'Expected `size` option to be a positive safe integer or 0';
 const CACHE_ERROR = 'Expected `cache` option to be a <string> one of \'default\', \'force-cache\', \'no-cache\', \'no-store\' and \'only-if-cached\'';
 const MAX_SOCKETS_ERROR = 'Expected `maxSockets` option to be a positive safe integer or Infinity (15 by default)';
+
+class AbortError extends Error {
+	constructor(method, url) {
+		super(`The ${method} request to ${url} was aborted.`);
+		this.name = 'AbortError';
+		this.url = url;
+		this.code = ABORT_ERROR_CODE;
+	}
+}
 
 function toLowerCase(str) {
 	return str.toLowerCase();
@@ -134,6 +144,7 @@ function validateOptions(options, isBaseOptions, frozenInBase, additionalOptionV
 		urlModifier,
 		baseUrl,
 		resolveUnsuccessfulResponse,
+		signal,
 		userAgent,
 		method,
 		headers,
@@ -284,6 +295,12 @@ function validateOptions(options, isBaseOptions, frozenInBase, additionalOptionV
 	if (resolveUnsuccessfulResponse !== undefined && typeof resolveUnsuccessfulResponse !== 'boolean') {
 		errors.push(new TypeError(`Expected \`resolveUnsuccessfulResponse\` option to be boolean, but got a non-boolean value ${
 			inspectWithKind(resolveUnsuccessfulResponse)
+		}.`));
+	}
+
+	if (signal !== undefined && (signal === null || typeof signal !== 'object' || typeof signal.aborted !== 'boolean')) {
+		errors.push(new TypeError(`Expected \`signal\` option to be an AbortSignal, but got ${
+			inspectWithKind(signal)
 		}.`));
 	}
 
@@ -565,6 +582,14 @@ async function request(...args) {
 		throw httpError;
 	}
 
+	if (mergedOptions.signal) {
+		if (mergedOptions.signal.aborted) {
+			response.body.destroy(new AbortError(method, response.url));
+		} else {
+			mergedOptions.signal.addEventListener('abort', response.body.destroy(new AbortError(method, response.url)));
+		}
+	}
+
 	return response;
 }
 
@@ -603,7 +628,7 @@ module.exports = async function wiseFetch(...args) {
 	return (await prepare())(...args);
 };
 
-module.exports.create = function create(...defaultsArgs) {
+function create(...defaultsArgs) {
 	const argLen = defaultsArgs.length;
 
 	if (defaultsArgs[1] !== HAS_BASE_OPTIONS && argLen !== 1) {
@@ -637,9 +662,17 @@ module.exports.create = function create(...defaultsArgs) {
 	};
 
 	return wiseFetch;
-};
+}
 
 Object.defineProperties(module.exports, {
+	create: {
+		value: create,
+		enumerable: true
+	},
+	ABORT_ERROR_CODE: {
+		value: ABORT_ERROR_CODE,
+		enumerable: true
+	},
 	CACHE_DIR: {
 		value: CACHE_DIR,
 		enumerable: true

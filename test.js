@@ -6,6 +6,7 @@ const {randomBytes} = require('crypto');
 const {resolve} = require('path');
 const {stat} = require('fs').promises;
 
+const AbortController = require('abort-controller');
 const brokenNpmPath = require('broken-npm-path');
 const clearModules = require('clear-module').all;
 const noop = require('lodash/noop');
@@ -36,8 +37,9 @@ const server = createServer((request, response) => {
 });
 
 test('wiseFetch()', async t => {
-	process.env.npm_config_proxy = 'http://localhost:3018/'; // eslint-disable-line camelcase
+	const abortController = new AbortController();
 
+	process.env.npm_config_proxy = 'http://localhost:3018/'; // eslint-disable-line camelcase
 	await promisify(server.listen.bind(server))(3018);
 	await Promise.all([
 		(async () => {
@@ -77,8 +79,31 @@ test('wiseFetch()', async t => {
 				[randomStr, 'U'],
 				'should support node-fetch and make-fetch-happen options.'
 			);
+		})(),
+		(async () => {
+			try {
+				const response = await wiseFetch('http://localhost:3018/', {signal: abortController.signal});
+				setImmediate(() => abortController.abort());
+				await response.text();
+				t.fail('Unexpectedly succeeded.');
+			} catch ({message}) {
+				t.ok(
+					message.endsWith('The GET request to http://localhost:3018/ was aborted.'),
+					'should be abortable via AbortController#abort().'
+				);
+			}
 		})()
 	]);
+
+	try {
+		await (await wiseFetch('http://localhost:3018/', {signal: abortController.signal})).text();
+		t.fail('Unexpectedly succeeded.');
+	} catch ({message}) {
+		t.ok(
+			message.endsWith('The GET request to http://localhost:3018/ was aborted.'),
+			'should abort the request immediately when the AbortSignal is already aborted.'
+		);
+	}
 
 	delete	process.env.npm_config_proxy;
 
@@ -203,6 +228,17 @@ test('wiseFetch.create()', async t => {
 	})).buffer()).equals(Buffer.from('["successfully overridden","A"]')), 'should merge headers.');
 
 	await promisify(server.close.bind(server))();
+
+	try {
+		wiseFetch.create({}).create({redirect: 'mammal'});
+		fail();
+	} catch (err) {
+		t.equal(
+			err.toString(),
+			'RangeError: Expected `redirect` option to be a <string> one of \'error\', \'follow\' and \'manual\', but got an invalid value \'mammal\'.',
+			'should ensure create functions also have `create` method.'
+		);
+	}
 
 	try {
 		wiseFetch.create({}).create({redirect: 'mammal'});
@@ -343,6 +379,7 @@ test('wiseFetch() argument validation', async t => {
 			counter: 8,
 			resolveUnsuccessfulResponse: new Int32Array(),
 			baseUrl: 'ftp://a/',
+			signal: {aborted: 1},
 			headers: Symbol('?'),
 			redirect: Buffer.from('1'),
 			cache: new Set([null]),
@@ -352,19 +389,20 @@ test('wiseFetch() argument validation', async t => {
 			maxSockets: -1,
 			compression: true
 		})).toString(),
-		`Error: 12 errors found in the options object:
+		`Error: 13 errors found in the options object:
   1. \`compression\` option doesn't exist. Probably it's a typo for \`compress\`.
   2. \`cacheManager\` option defaults to ${inspect(wiseFetch.CACHE_DIR)} and cannot be configured, but got a value Uint8Array [  ].
   3. \`counter\` option is not supported, but got a value 8.
   4. Expected \`baseUrl\` option to be an HTTP or HTTPS URL to rebase all requests from it (<string|URL>), but got an non-HTTP(S) URL 'ftp://a/'.
   5. Expected \`resolveUnsuccessfulResponse\` option to be boolean, but got a non-boolean value Int32Array [  ].
-  6. Expected \`headers\` option to be a Headers constructor argument (<object|Map|Array>, but got Symbol(?).
-  7. Expected \`redirect\` option to be a <string> one of 'error', 'follow' and 'manual', but got a non-string value <Buffer 31>.
-  8. Expected \`cache\` option to be a <string> one of 'default', 'force-cache', 'no-cache', 'no-store' and 'only-if-cached', but got a non-string value Set { null }.
-  9. Expected \`follow\` option to be a positive safe integer or 0 (20 by default), but got a non-number value '123' (string).
-  10. Expected \`timeout\` option to be a positive safe integer or 0, but got NaN.
-  11. Expected \`size\` option to be a positive safe integer or 0, but got Infinity.
-  12. Expected \`maxSockets\` option to be a positive safe integer or Infinity (15 by default), but got a negative number -1.`,
+  6. Expected \`signal\` option to be an AbortSignal, but got { aborted: 1 } (object).
+  7. Expected \`headers\` option to be a Headers constructor argument (<object|Map|Array>, but got Symbol(?).
+  8. Expected \`redirect\` option to be a <string> one of 'error', 'follow' and 'manual', but got a non-string value <Buffer 31>.
+  9. Expected \`cache\` option to be a <string> one of 'default', 'force-cache', 'no-cache', 'no-store' and 'only-if-cached', but got a non-string value Set { null }.
+  10. Expected \`follow\` option to be a positive safe integer or 0 (20 by default), but got a non-number value '123' (string).
+  11. Expected \`timeout\` option to be a positive safe integer or 0, but got NaN.
+  12. Expected \`size\` option to be a positive safe integer or 0, but got Infinity.
+  13. Expected \`maxSockets\` option to be a positive safe integer or Infinity (15 by default), but got a negative number -1.`,
 		'should display all errors when the options object has multiple errors.'
 	);
 
