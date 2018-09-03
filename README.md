@@ -178,6 +178,46 @@ const alwaysPost = wiseFetch.create({
 })();
 ```
 
+##### baseOptions.urlModifier
+
+Type: `Function`
+
+Update a request URL to the value this function returns, before applying [`baseUrl` option](#optionsbaseurl) to it.
+
+This function receives the original URL and is expected to return a `string` or `URL`.
+
+```javascript
+(async () => {
+  const response = await wiseFetch('https://example.org/', {urlModifier: url => `${url}?x=1`});
+  response.url; //=> 'https://example.org/?x=1'
+})();
+```
+
+##### baseOptions.additionalOptionValidators
+
+Type: `Array<Function>`
+
+An array of functions that performs additional option validation. Each functions receive an options `Object` and if at least one of then throws an error, `wiseFetch` will be rejected.
+
+```javascript
+const {username} = require('os').userInfo();
+
+const forceYourUA = wiseFetch.create({
+  additionalOptionValidators: [
+    options => {
+      if (options.userAgent && !options.userAgent.includes(username)) {
+        throw new Error('user agent must include your name!');
+      }
+    }
+  ]
+});
+
+forceYourUA('https://example.org', {
+  userAgent: 'nothing'
+});
+// rejected with an Error: 'user agent must include your name!'
+```
+
 ### wiseFetch.CACHE_DIR
 
 Type: `string`

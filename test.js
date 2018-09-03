@@ -241,6 +241,45 @@ test('wiseFetch.create()', async t => {
 	}
 
 	try {
+		await wiseFetch.create({
+			additionalOptionValidators: [
+				noop,
+				({timeout}) => {
+					if (timeout !== 123) {
+						throw new Error('timeout must be 123');
+					}
+				}
+			]
+		})('https://example.org', {timeout: 100});
+		fail();
+	} catch (err) {
+		t.equal(
+			err.toString(),
+			'Error: timeout must be 123',
+			'should apply additional option validation when `additionalOptionValidators` option is provided.'
+		);
+	}
+
+	try {
+		await wiseFetch.create({
+			urlModifier(url) {
+				if (url.protocol !== 'https:') {
+					throw new Error('protocol must be HTTPS');
+				}
+
+				return url;
+			}
+		})(new URL('http://example.org'));
+		fail();
+	} catch (err) {
+		t.equal(
+			err.toString(),
+			'Error: protocol must be HTTPS',
+			'should apply URL modification to the original URL when `urlModifier` option is provided.'
+		);
+	}
+
+	try {
 		await newWiseFetch('', {}, {});
 		fail();
 	} catch (err) {
@@ -265,19 +304,19 @@ test('wiseFetch() argument validation', async t => {
 
 	t.equal(
 		(await getError([-0])).toString(),
-		'TypeError: Expected an HTTPS or HTTPS request URL (<string|URL>), but got [ -0 ] (array).',
+		'TypeError: Expected an HTTP or HTTPS request URL (<string|URL>), but got [ -0 ] (array).',
 		'should fail when it takes a non-string URL.'
 	);
 
 	t.equal(
 		(await getError('')).toString(),
-		'RangeError: Expected an HTTPS or HTTPS request URL (<string|URL>), but got \'\' (empty string).',
+		'RangeError: Expected an HTTP or HTTPS request URL (<string|URL>), but got \'\' (empty string).',
 		'should fail when it takes an empty string as a URL.'
 	);
 
 	t.equal(
 		(await getError('\t\n')).toString(),
-		'URIError: Expected an HTTPS or HTTPS request URL (<string|URL>), but got a whitespace-only string \'\\t\\n\'.',
+		'URIError: Expected an HTTP or HTTPS request URL (<string|URL>), but got a whitespace-only string \'\\t\\n\'.',
 		'should fail when it takes a whitespace-only string as a URL.'
 	);
 
@@ -317,7 +356,7 @@ test('wiseFetch() argument validation', async t => {
   1. \`compression\` option doesn't exist. Probably it's a typo for \`compress\`.
   2. \`cacheManager\` option defaults to ${inspect(wiseFetch.CACHE_DIR)} and cannot be configured, but got a value Uint8Array [  ].
   3. \`counter\` option is not supported, but got a value 8.
-  4. Expected \`baseUrl\` option to be an HTTPS or HTTPS URL to rebase all requests from it (<string|URL>), but got an non-HTTP(s) URL 'ftp://a/'.
+  4. Expected \`baseUrl\` option to be an HTTP or HTTPS URL to rebase all requests from it (<string|URL>), but got an non-HTTP(S) URL 'ftp://a/'.
   5. Expected \`resolveUnsuccessfulResponse\` option to be boolean, but got a non-boolean value Int32Array [  ].
   6. Expected \`headers\` option to be a Headers constructor argument (<object|Map|Array>, but got Symbol(?).
   7. Expected \`redirect\` option to be a <string> one of 'error', 'follow' and 'manual', but got a non-string value <Buffer 31>.
@@ -466,6 +505,24 @@ test('wiseFetch.create() argument validation', async t => {
 			'should fail when `frozenOptions` option includes invalid values.'
 		);
 	}
+
+	t.throws(
+		() => wiseFetch.create({urlModifier: Buffer.from('&')}),
+		/^TypeError.*Expected `urlModifier` option to be <Function>, but got a non-function value <Buffer 26>\./u,
+		'should fail when `urlModifier` option is not a function.'
+	);
+
+	t.throws(
+		() => wiseFetch.create({additionalOptionValidators: 0.1}),
+		/^TypeError: Expected `additionalOptionValidators` option to be <Array<Function>>, but got a non-array value 0\.1 \(number\)\./u,
+		'should fail when `additionalOptionValidators` option is not an array.'
+	);
+
+	t.throws(
+		() => wiseFetch.create({additionalOptionValidators: [noop, '0', noop]}),
+		/^TypeError.*Expected every item of `additionalOptionValidators` option to be a function, but included a non-function value '0' \(string\) at 1\./u,
+		'should fail when `additionalOptionValidators` option contains a non-function value.'
+	);
 
 	t.throws(
 		() => wiseFetch.create(),

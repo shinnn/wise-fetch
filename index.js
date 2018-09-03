@@ -15,6 +15,7 @@ const lowercaseKeys = require('lowercase-keys');
 const rejectUnsatisfiedNpmVersion = require('reject-unsatisfied-npm-version');
 
 const CACHE_DIR = join(tmpdir(), 'wise-fetch');
+const CREATE_METHOD_SPECIFIC_OPTIONS = new Set(['additionalOptionValidators', 'frozenOptions', 'urlModifier']);
 const CACHE_OPTIONS = new Set(['default', 'force-cache', 'no-cache', 'no-store', 'only-if-cached']);
 const POSSIBLE_TYPOS = new Map([
 	['baseuri', 'baseUrl'],
@@ -37,9 +38,9 @@ const NOT_MODIFIED = 304;
 
 const HAS_BASE_OPTIONS = Symbol('HAS_BASE_OPTIONS');
 
-const URL_ERROR = 'Expected an HTTPS or HTTPS request URL (<string|URL>)';
+const URL_ERROR = 'Expected an HTTP or HTTPS request URL (<string|URL>)';
 const FREEZED_OPTION_ERROR = 'Expected every values of `frozenOptions` option to be an Object property name (<string>)';
-const BASE_URL_ERROR = 'Expected `baseUrl` option to be an HTTPS or HTTPS URL to rebase all requests from it (<string|URL>)';
+const BASE_URL_ERROR = 'Expected `baseUrl` option to be an HTTP or HTTPS URL to rebase all requests from it (<string|URL>)';
 const HEADERS_ERROR = 'Expected `headers` option to be a Headers constructor argument (<object|Map|Array>';
 const USER_AGENT_ERROR = 'Expected `userAgent` option to be a User-Agent <string>';
 const METHOD_ERROR = 'Expected `method` option to be a request method (<string>), for exmaple \'post\' and \'HEAD\'';
@@ -104,7 +105,7 @@ function getUrlValidationError(message, url, baseUrl) {
 	}
 
 	if (url.protocol !== 'https:' && url.protocol !== 'http:') {
-		const error = new RangeError(`${message}, but got an non-HTTP(s) URL ${inspect(url.toString())}.`);
+		const error = new RangeError(`${message}, but got an non-HTTP(S) URL ${inspect(url.toString())}.`);
 		error.code = 'ERR_INVALID_URL_SCHEME';
 
 		return error;
@@ -113,7 +114,7 @@ function getUrlValidationError(message, url, baseUrl) {
 	return null;
 }
 
-function validateOptions(options, isBaseOptions, frozenInBase) {
+function validateOptions(options, isBaseOptions, frozenInBase, additionalOptionValidatorsInBase) {
 	if (options !== null && typeof options !== 'object') {
 		const error = new TypeError(`Expected options object (<Object>), but got ${
 			inspectWithKind(options)
@@ -124,10 +125,13 @@ function validateOptions(options, isBaseOptions, frozenInBase) {
 	}
 
 	const errors = [];
+	const additionalErrors = [];
 	const {
 		cacheManager,
 		counter,
 		frozenOptions,
+		additionalOptionValidators,
+		urlModifier,
 		baseUrl,
 		resolveUnsuccessfulResponse,
 		userAgent,
@@ -140,6 +144,36 @@ function validateOptions(options, isBaseOptions, frozenInBase) {
 		cache,
 		maxSockets
 	} = options;
+
+	if (isBaseOptions) {
+		if (additionalOptionValidators !== undefined) {
+			if (!Array.isArray(additionalOptionValidators)) {
+				errors.push(new TypeError(`Expected \`additionalOptionValidators\` option to be <Array<Function>>, but got a non-array value ${
+					inspectWithKind(additionalOptionValidators)
+				}.`));
+			} else {
+				for (const [index, additionalOptionValidator] of additionalOptionValidators.entries()) {
+					if (typeof additionalOptionValidator !== 'function') {
+						errors.push(new TypeError(`Expected every item of \`additionalOptionValidators\` option to be a function, but included a non-function value ${
+							inspectWithKind(additionalOptionValidator)
+						} at ${index}.`));
+
+						continue;
+					}
+				}
+			}
+		}
+	} else {
+		for (const disallowedOption of CREATE_METHOD_SPECIFIC_OPTIONS) {
+			if (options[disallowedOption] === undefined) {
+				continue;
+			}
+
+			errors.push(new TypeError(`\`${disallowedOption}\` option is only available on creating new instances and cannot be used in each function call, but got a value ${
+				inspectWithKind(options[disallowedOption])
+			}.`));
+		}
+	}
 
 	if (frozenInBase) {
 		const invalidOptions = [];
@@ -163,11 +197,7 @@ function validateOptions(options, isBaseOptions, frozenInBase) {
 			throw error;
 		}
 	} else if (frozenOptions !== undefined) {
-		if (!isBaseOptions) {
-			errors.push(new TypeError(`\`frozenOptions\` option is only available on creating new instances and cannot be used in each function call, but got a value ${
-				inspectWithKind(frozenOptions)
-			}.`));
-		} else if (!isSet(frozenOptions)) {
+		if (!isSet(frozenOptions)) {
 			errors.push(new TypeError(`Expected \`frozenOptions\` option to be <Set<string>>, but got a non-Set value ${
 				inspectWithKind(frozenOptions)
 			}.`));
@@ -184,6 +214,16 @@ function validateOptions(options, isBaseOptions, frozenInBase) {
 				} else if (frozenOption.match(/\W/u) !== null) {
 					errors.push(new Error(`${FREEZED_OPTION_ERROR}, but got an unknown option name ${inspectWithKind(frozenOption)}.`));
 				}
+			}
+		}
+	}
+
+	if (additionalOptionValidatorsInBase) {
+		for (const additionalOptionValidatorInBase of additionalOptionValidatorsInBase) {
+			try {
+				additionalOptionValidatorInBase(options);
+			} catch (err) {
+				additionalErrors.push(err);
 			}
 		}
 	}
@@ -233,6 +273,12 @@ function validateOptions(options, isBaseOptions, frozenInBase) {
 				} whose ${propName} is ${inspect(val)}.`));
 			}
 		}
+	}
+
+	if (urlModifier !== undefined && typeof urlModifier !== 'function') {
+		errors.push(new TypeError(`Expected \`urlModifier\` option to be <Function>, but got a non-function value ${
+			inspectWithKind(urlModifier)
+		}.`));
 	}
 
 	if (resolveUnsuccessfulResponse !== undefined && typeof resolveUnsuccessfulResponse !== 'boolean') {
@@ -399,6 +445,8 @@ function validateOptions(options, isBaseOptions, frozenInBase) {
 		}
 	}
 
+	errors.push(...additionalErrors);
+
 	if (errors.length === 0) {
 		return;
 	}
@@ -435,7 +483,7 @@ async function request(...args) {
 		} arguments.`);
 	}
 
-	const [url, options = {}, _, baseOptions = {}] = args;
+	const [originalUrl, options = {}, _, baseOptions = {}] = args;
 
 	if (argLen === 2) {
 		validateOptions(options);
@@ -450,6 +498,7 @@ async function request(...args) {
 		...userAgentFromUserAgentOption ? {'user-agent': userAgentFromUserAgentOption} : null
 	};
 
+	const url = mergedOptions.urlModifier ? mergedOptions.urlModifier(originalUrl) : originalUrl;
 	const urlError = getUrlValidationError(URL_ERROR, url, mergedOptions.baseUrl);
 
 	if (urlError) {
@@ -575,7 +624,7 @@ module.exports.create = function create(...defaultsArgs) {
 		}
 
 		if (args.length === 2) {
-			validateOptions(args[1], false, wiseFetch.options.frozenOptions);
+			validateOptions(args[1], false, wiseFetch.options.frozenOptions, wiseFetch.options.additionalOptionValidators);
 			return module.exports(...args, HAS_BASE_OPTIONS, wiseFetch.options);
 		}
 
