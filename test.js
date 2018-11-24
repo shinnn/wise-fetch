@@ -105,7 +105,7 @@ test('wiseFetch()', async t => {
 		);
 	}
 
-	delete	process.env.npm_config_proxy;
+	delete process.env.npm_config_proxy;
 
 	process.env.proxy = 'http://localhost:3018';
 	process.env.npm_config_no_proxy = 'http://n/o/n/e'; // eslint-disable-line camelcase
@@ -391,10 +391,10 @@ test('wiseFetch() argument validation', async t => {
 		})).toString(),
 		`Error: 13 errors found in the options object:
   1. \`compression\` option doesn't exist. Probably it's a typo for \`compress\`.
-  2. \`cacheManager\` option defaults to ${inspect(wiseFetch.CACHE_DIR)} and cannot be configured, but got a value Uint8Array [  ].
+  2. \`cacheManager\` option defaults to ${inspect(wiseFetch.CACHE_DIR)} and cannot be configured, but got a value Uint8Array [].
   3. \`counter\` option is not supported, but got a value 8.
   4. Expected \`baseUrl\` option to be an HTTP or HTTPS URL to rebase all requests from it (<string|URL>), but got an non-HTTP(S) URL 'ftp://a/'.
-  5. Expected \`resolveUnsuccessfulResponse\` option to be boolean, but got a non-boolean value Int32Array [  ].
+  5. Expected \`resolveUnsuccessfulResponse\` option to be boolean, but got a non-boolean value Int32Array [].
   6. Expected \`signal\` option to be an AbortSignal, but got { aborted: 1 } (object).
   7. Expected \`headers\` option to be a Headers constructor argument (<object|Map|Array>, but got Symbol(?).
   8. Expected \`redirect\` option to be a <string> one of 'error', 'follow' and 'manual', but got a non-string value <Buffer 31>.
@@ -416,7 +416,7 @@ test('wiseFetch() argument validation', async t => {
 	t.equal(
 		(await getError('https://localhost:3000/', {method: new Uint32Array()})).toString(),
 		'TypeError: Expected `method` option to be a request method (<string>), ' +
-		'for exmaple \'post\' and \'HEAD\', but got a non-string value Uint32Array [  ].',
+		'for exmaple \'post\' and \'HEAD\', but got a non-string value Uint32Array [].',
 		'should fail when it takes non-string `method` option.'
 	);
 
@@ -479,7 +479,7 @@ test('wiseFetch.create() argument validation', async t => {
 		t.equal(
 			err.toString(),
 			'TypeError: Expected `headers` option to be a Headers constructor argument ' +
-			'(<object|Map|Array>, but got { [Symbol(Symbol.iterator)]: Uint16Array [  ] } (object) ' +
+			'(<object|Map|Array>, but got { [Symbol(Symbol.iterator)]: Uint16Array [] } (object) ' +
 			'whose `Symbol.iterator` property is defined but not a function.',
 			'should fail when it takes an invalid option.'
 		);

@@ -27,25 +27,25 @@
 	"dependencies": {
 		"arr-indexes-of": "^2.0.0",
 		"array-to-sentence": "^2.0.0",
-		"fromentries": "^1.0.3",
+		"fromentries": "^1.1.0",
 		"inspect-with-kind": "^1.0.4",
 		"load-from-cwd-or-npm": "^3.0.1",
 		"lowercase-keys": "^1.0.1",
 		"reject-unsatisfied-npm-version": "^1.0.0"
 	},
 	"devDependencies": {
-		"@shinnn/eslint-config-node": "^6.0.0",
+		"@shinnn/eslint-config": "^6.8.1",
 		"abort-controller": "^1.0.2",
 		"broken-npm-path": "^1.0.0",
 		"clear-module": "^3.0.0",
-		"eslint": "^5.5.0",
-		"lodash": "^4.17.10",
-		"nyc": "^13.0.1",
-		"nyc-config-common": "^1.0.0",
+		"eslint": "^5.9.0",
+		"lodash": "^4.17.11",
+		"nyc": "^13.1.0",
+		"nyc-config-common": "^1.0.1",
 		"tape": "^4.9.1"
 	},
 	"eslintConfig": {
-		"extends": "@shinnn/node",
+		"extends": "@shinnn",
 		"rules": {
 			"no-use-extend-native/no-use-extend-native": "off"
 		}
