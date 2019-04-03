@@ -34,15 +34,15 @@
 		"reject-unsatisfied-npm-version": "^1.0.0"
 	},
 	"devDependencies": {
-		"@shinnn/eslint-config": "^6.8.1",
-		"abort-controller": "^1.0.2",
+		"@shinnn/eslint-config": "^6.10.0",
+		"abort-controller": "^3.0.0",
 		"broken-npm-path": "^1.0.0",
-		"clear-module": "^3.0.0",
-		"eslint": "^5.9.0",
+		"clear-module": "^3.1.0",
+		"eslint": "^5.16.0",
 		"lodash": "^4.17.11",
-		"nyc": "^13.1.0",
+		"nyc": "^13.3.0",
 		"nyc-config-common": "^1.0.1",
-		"tape": "^4.9.1"
+		"tape": "^4.10.1"
 	},
 	"eslintConfig": {
 		"extends": "@shinnn",

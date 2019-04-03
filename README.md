@@ -29,7 +29,7 @@ const wiseFetch = require('wise-fetch');
 
 ## Installation
 
-[Use](https://docs.npmjs.com/cli/install) [npm](https://docs.npmjs.com/getting-started/what-is-npm).
+[Use](https://docs.npmjs.com/cli/install) [npm](https://docs.npmjs.com/about-npm/).
 
 ```
 npm install wise-fetch
@@ -43,7 +43,7 @@ const wiseFetch = require('wise-fetch');
 
 ### wiseFetch(*url* [, *options*])
 
-*url*: `string` or [`URL`](https://nodejs.org/api/url.html#url_class_url) (HTTP or HTTPS URL)  
+*url*: `string | URL` (HTTP or HTTPS URL)  
 *options*: `Object`  
 Return: [`Promise<Response>`](https://github.com/npm/node-fetch-npm/blob/v2.0.2/src/response.js#L21)
 
@@ -78,7 +78,7 @@ Additionally, the following wise-fetch specific options are available.
 
 ##### options.baseUrl
 
-Type: `string` or `URL`
+Type: `string | URL`
 
 Set the base URL to resolve against if the request URL is not absolute.
 
@@ -112,7 +112,7 @@ Type: [`AbortSignal`](https://developer.mozilla.org/docs/Web/API/AbortSignal)
 
 Allow a user to abort the request via the corresponding [`AbortController`](https://developer.mozilla.org/docs/Web/API/AbortController/AbortController). Read [the article about abortable fetch](https://developers.google.com/web/updates/2017/09/abortable-fetch) for more details.
 
-Currently Node.js doesn't support [`AbortController`](https://developer.mozilla.org/docs/Web/API/AbortController), so that users need to use [the userland implementation](https://github.com/mysticatea/abort-controller) instead.
+Currently Node.js doesn't support [`AbortController`](https://developer.mozilla.org/docs/Web/API/AbortController), so that users need to substitute [the userland implementation](https://github.com/mysticatea/abort-controller) for it.
 
 ```javascript
 const AbortController = require('abort-controller');
@@ -237,9 +237,7 @@ const forceYourUA = wiseFetch.create({
   ]
 });
 
-forceYourUA('https://example.org', {
-  userAgent: 'nothing'
-});
+forceYourUA('https://example.org', {userAgent: 'nothing'});
 // rejected with an Error: 'user agent must include your name!'
 ```
 
@@ -273,4 +271,4 @@ Users can clear cache by deleting this directory.
 
 ## License
 
-[ISC License](./LICENSE) © 2018 Shinnosuke Watanabe
+[ISC License](./LICENSE) © 2018 - 2019 Shinnosuke Watanabe

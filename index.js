@@ -190,7 +190,7 @@ function validateOptions(options, isBaseOptions, frozenInBase, additionalOptionV
 		const invalidOptions = [];
 
 		for (const frozenOption of frozenInBase) {
-			if (!Object.getOwnPropertyDescriptor(options, frozenOption)) {
+			if (Reflect.getOwnPropertyDescriptor(options, frozenOption) === undefined) {
 				continue;
 			}
 
