@@ -9,10 +9,12 @@ const {tmpdir} = require('os');
 const arrayToSentence = require('array-to-sentence');
 const arrIndexesOf = require('arr-indexes-of');
 const fromEntries = require('fromentries');
+const importPackage = require('import-package');
 const inspectWithKind = require('inspect-with-kind');
-const loadFromCwdOrNpm = require('load-from-cwd-or-npm');
 const lowercaseKeys = require('lowercase-keys');
 const rejectUnsatisfiedNpmVersion = require('reject-unsatisfied-npm-version');
+
+importPackage.preload('make-fetch-happen');
 
 const ABORT_ERROR_CODE = 20;
 const CACHE_DIR = join(tmpdir(), 'wise-fetch');
@@ -595,7 +597,7 @@ async function request(...args) {
 
 async function getCoreFn() {
 	try {
-		makeFetchHappen = (await loadFromCwdOrNpm('make-fetch-happen')).defaults({
+		makeFetchHappen = (await importPackage('make-fetch-happen')).defaults({
 			maxSockets: 0,
 			cacheManager: CACHE_DIR
 		});

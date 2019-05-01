@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/wise-fetch.svg)](https://www.npmjs.com/package/wise-fetch)
 [![Build Status](https://travis-ci.com/shinnn/wise-fetch.svg?branch=master)](https://travis-ci.com/shinnn/wise-fetch)
-[![Coverage Status](https://img.shields.io/coveralls/shinnn/wise-fetch.svg)](https://coveralls.io/github/shinnn/wise-fetch?branch=master)
+[![codecov](https://codecov.io/gh/shinnn/wise-fetch/branch/master/graph/badge.svg)](https://codecov.io/gh/shinnn/wise-fetch)
 
 Feature-rich [node-fetch](https://github.com/bitinn/node-fetch):
 

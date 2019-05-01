@@ -39,7 +39,7 @@ const server = createServer((request, response) => {
 test('wiseFetch()', async t => {
 	const abortController = new AbortController();
 
-	process.env.npm_config_proxy = 'http://localhost:3018/'; // eslint-disable-line camelcase
+	process.env.npm_config_proxy = 'http://localhost:3018/';
 	await promisify(server.listen.bind(server))(3018);
 	await Promise.all([
 		(async () => {
@@ -108,7 +108,7 @@ test('wiseFetch()', async t => {
 	delete process.env.npm_config_proxy;
 
 	process.env.proxy = 'http://localhost:3018';
-	process.env.npm_config_no_proxy = 'http://n/o/n/e'; // eslint-disable-line camelcase
+	process.env.npm_config_no_proxy = 'http://n/o/n/e';
 
 	t.ok(
 		(await wiseFetch('http://localhost:3018/json', {
@@ -174,7 +174,7 @@ test('wiseFetch()', async t => {
 
 test('wiseFetch.create()', async t => {
 	const fail = t.fail.bind(t, 'Unexpectedly succeeded.');
-	process.env.npm_config_https_proxy = 'https://example.org'; // eslint-disable-line camelcase
+	process.env.npm_config_https_proxy = 'https://example.org';
 
 	try {
 		await wiseFetch.create({timeout: 2})('https://github.com');
@@ -588,7 +588,7 @@ test('wiseFetch.CACHE_DIR', async t => {
 
 test('wiseFetch() with a broken npm CLI', async t => {
 	process.env.PATH = resolve('/none/exists');
-	process.env.npm_execpath = brokenNpmPath; // eslint-disable-line camelcase
+	process.env.npm_execpath = brokenNpmPath;
 
 	clearModules();
 
