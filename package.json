@@ -1,6 +1,6 @@
 {
 	"name": "wise-fetch",
-	"version": "0.3.1",
+	"version": "0.3.2",
 	"description": "Feature-rich node-fetch",
 	"author": "Shinnosuke Watanabe (https://github.com/shinnn)",
 	"repository": "shinnn/wise-fetch",
