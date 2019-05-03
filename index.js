@@ -8,7 +8,6 @@ const {tmpdir} = require('os');
 
 const arrayToSentence = require('array-to-sentence');
 const arrIndexesOf = require('arr-indexes-of');
-const fromEntries = require('fromentries');
 const importPackage = require('import-package');
 const inspectWithKind = require('inspect-with-kind');
 const lowercaseKeys = require('lowercase-keys');
@@ -73,7 +72,7 @@ function quote(str) {
 
 function headersToObject(headers) {
 	if (headers[Symbol.iterator]) {
-		return lowercaseKeys(fromEntries(headers));
+		return lowercaseKeys(Object.fromEntries(headers));
 	}
 
 	return lowercaseKeys(headers);
