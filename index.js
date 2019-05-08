@@ -35,7 +35,7 @@ const POSSIBLE_TYPOS = new Map([
 ]);
 const PROXY_RELATED_ENVS = new Set(['https_proxy', 'http_proxy', 'proxy', 'no_proxy']);
 const REDIRECT_OPTIONS = new Set(['error', 'follow', 'manual']);
-const MINIMUM_REQUIRED_NPM_VERSION = '6.4.1';
+const MINIMUM_REQUIRED_NPM_VERSION = '6.9.0';
 const NOT_MODIFIED = 304;
 
 const HAS_BASE_OPTIONS = Symbol('HAS_BASE_OPTIONS');
